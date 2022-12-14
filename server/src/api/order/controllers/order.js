@@ -1,5 +1,6 @@
 "use strict";
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 /**
  * order controller
  */
@@ -9,9 +10,8 @@ const { createCoreController } = require("@strapi/strapi").factories;
 module.exports = createCoreController("api::order.order", ({ strapi }) => ({
   async create(ctx) {
     const { products, userName, email } = ctx.request.body;
-
     try {
-      //retrieve item information
+      // retrieve item information
       const lineItems = await Promise.all(
         products.map(async (product) => {
           const item = await strapi
@@ -20,7 +20,7 @@ module.exports = createCoreController("api::order.order", ({ strapi }) => ({
 
           return {
             price_data: {
-              currency: "gbp",
+              currency: "usd",
               product_data: {
                 name: item.name,
               },
@@ -31,7 +31,7 @@ module.exports = createCoreController("api::order.order", ({ strapi }) => ({
         })
       );
 
-      //create a stripe session
+      // create a stripe session
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         customer_email: email,
@@ -40,20 +40,17 @@ module.exports = createCoreController("api::order.order", ({ strapi }) => ({
         cancel_url: "http://localhost:5173",
         line_items: lineItems,
       });
-      // create the order item in backend
-      await strapi.service("api::order.order").create({
-        data: { userName, products, stripeSessionId: session.id },
-      });
 
-      //return session id
+      // create the item
+      await strapi
+        .service("api::order.order")
+        .create({ data: { userName, products, stripeSessionId: session.id } });
+
+      // return the session id
       return { id: session.id };
     } catch (error) {
       ctx.response.status = 500;
-      return {
-        error: {
-          message: "There was a problem with the payment. Please try again.",
-        },
-      };
+      return { error: { message: "There was a problem creating the charge" } };
     }
   },
 }));
