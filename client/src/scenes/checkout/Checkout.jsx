@@ -1,9 +1,142 @@
+import { useSelector } from "react-redux";
+import { Box, Button, Stepper, Step, StepLabel } from "@mui/material";
+import { Formik } from "formik";
+import { useState } from "react";
+import * as yup from "yup";
+import { shades } from "../../theme";
+import Shipping from "./Shipping";
+
 const Checkout = () => {
+  const [activeStep, setActiveStep] = useState(0);
+  const cart = useSelector((state) => state.cart.cart);
+  const isFirstStep = activeStep === 0;
+  const isSecondStep = activeStep === 1;
+
+  const handleFormSubmit = async (value, actions) => {
+    setActiveStep(activeStep + 1);
+  };
+
+  async function makePayment(values) {}
+
   return (
-    <div>
-      <h1>Checkout</h1>
-    </div>
+    <Box width="80%" margin="100px auto">
+      <Stepper activeStep={activeStep} sx={{ m: "20px 0" }}>
+        <Step>
+          <StepLabel>Billing</StepLabel>
+        </Step>
+        <Step>
+          <StepLabel>Payment</StepLabel>
+        </Step>
+      </Stepper>
+      <Box>
+        <Formik
+          onSubmit={handleFormSubmit}
+          initialValues={initialValues}
+          validationSchema={checkoutSchema[activeStep]}
+        >
+          {({
+            values,
+            errors,
+            touched,
+            handleBlur,
+            handleChange,
+            handleSubmit,
+            setFieldValue,
+          }) => (
+            <form onSubmit={handleSubmit}>
+              {isFirstStep && (
+                <Shipping
+                  values={values}
+                  errors={errors}
+                  touched={touched}
+                  handleBlur={handleBlur}
+                  handleChange={handleChange}
+                  setFieldValue={setFieldValue}
+                />
+              )}
+            </form>
+          )}
+        </Formik>
+      </Box>
+    </Box>
   );
 };
+
+const initialValues = {
+  billingAddress: {
+    firstName: "",
+    lastName: "",
+    country: "",
+    street1: "",
+    street2: "",
+    city: "",
+    county: "",
+    postCode: "",
+  },
+  shippingAddress: {
+    isSameAddress: true,
+    firstName: "",
+    lastName: "",
+    country: "",
+    street1: "",
+    street2: "",
+    city: "",
+    county: "",
+    postCode: "",
+  },
+  email: "",
+  phoneNumber: "",
+};
+
+const checkoutSchema = [
+  yup.object().shape({
+    billingAddress: yup.object().shape({
+      firstName: yup.string().required("Required"),
+      lastName: yup.string().required("Required"),
+      country: yup.string().required("Required"),
+      street1: yup.string().required("Required"),
+      street2: yup.string(),
+      city: yup.string().required("Required"),
+      county: yup.string().required("Required"),
+      postCode: yup.string().required("Required"),
+    }),
+    shippingAddress: yup.object().shape({
+      isSameAddress: yup.boolean(),
+      firstName: yup.string().when("isSameAddress", {
+        is: false,
+        then: yup.string().required("Required"),
+      }),
+      lastName: yup.string().when("isSameAddress", {
+        is: false,
+        then: yup.string().required("Required"),
+      }),
+      country: yup.string().when("isSameAddress", {
+        is: false,
+        then: yup.string().required("Required"),
+      }),
+      street1: yup.string().when("isSameAddress", {
+        is: false,
+        then: yup.string().required("Required"),
+      }),
+      street2: yup.string(),
+      city: yup.string().when("isSameAddress", {
+        is: false,
+        then: yup.string().required("Required"),
+      }),
+      county: yup.string().when("isSameAddress", {
+        is: false,
+        then: yup.string().required("Required"),
+      }),
+      postCode: yup.string().when("isSameAddress", {
+        is: false,
+        then: yup.string().required("Required"),
+      }),
+    }),
+  }),
+  yup.object().shape({
+    email: yup.string().required("Required"),
+    phoneNumber: yup.number().required("Required"),
+  }),
+];
 
 export default Checkout;
